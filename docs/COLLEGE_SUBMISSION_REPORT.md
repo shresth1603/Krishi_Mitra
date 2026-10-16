@@ -1,7 +1,8 @@
 # 🎓 KRISHI MITRA (कृषि मित्र) — PROJECT SUBMISSION & EVALUATION REPORT
 **Project Title**: Krishi Mitra — ML-Powered Agricultural Intelligence Platform  
 **Target Submission**: Faculty Mentor / College Evaluation Committee / Viva Voce  
-**Repository**: [https://github.com/shresth1603/Krishi-Mitra-1](https://github.com/shresth1603/Krishi-Mitra-1)  
+**Live Web Application**: [https://krishi-mitra-nu.vercel.app/](https://krishi-mitra-nu.vercel.app/)  
+**Repository**: [https://github.com/shresth1603/Krishi_Mitra](https://github.com/shresth1603/Krishi_Mitra)  
 **Academic Year**: 2026  
 
 ---

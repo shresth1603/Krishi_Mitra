@@ -1,5 +1,16 @@
 # 🌱 Krishi Mitra (कृषि मित्र) — ML-Powered Agricultural Platform
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-krishi--mitra--nu.vercel.app-00C853?style=for-the-badge&logo=vercel&logoColor=white)](https://krishi-mitra-nu.vercel.app/)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shresth1603/Krishi_Mitra)
+[![React 18](https://img.shields.io/badge/Frontend-React_18_%2B_Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://krishi-mitra-nu.vercel.app/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://github.com/shresth1603/Krishi_Mitra)
+
+> ### 🌐 Live Web Application
+> **🚀 Access Krishi Mitra Online:** **[https://krishi-mitra-nu.vercel.app/](https://krishi-mitra-nu.vercel.app/)**  
+> *Click the link above to immediately view and test the live application in your browser — zero setup or installation required!*
+
+---
+
 Krishi Mitra is an integrated agricultural intelligence platform designed to assist Indian farmers with machine-learning-driven crop diagnostics, data-backed crop suitability recommendations, real-time APMC mandi prices, econometric price forecasting, hyperlocal weather risk alerts, and government agricultural scheme discovery.
 
 ---
@@ -8,6 +19,7 @@ Krishi Mitra is an integrated agricultural intelligence platform designed to ass
 
 The complete, evidence-based documentation suite for faculty evaluation, technical mentors, and investors is available in the [`docs/`](docs/README.md) directory:
 
+- 🌐 **[Live Web Application](https://krishi-mitra-nu.vercel.app/)** — Instant browser access to the deployed platform
 - 📖 **[Master Documentation Hub](docs/README.md)** — Presentation index & reading guide
 - 🔍 **[Project Overview](docs/PROJECT_OVERVIEW.md)** — Problem statement, business domain & architecture
 - 📁 **[Project Structure & Codebase Audit](docs/PROJECT_STRUCTURE.md)** — Verified directory tree & route map

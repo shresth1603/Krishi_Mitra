@@ -1,5 +1,10 @@
 # 💻 Krishi Mitra — Frontend Single Page Application (SPA)
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-krishi--mitra--nu.vercel.app-00C853?style=for-the-badge&logo=vercel&logoColor=white)](https://krishi-mitra-nu.vercel.app/)
+
+> 🌐 **Production Web Link**: **[https://krishi-mitra-nu.vercel.app/](https://krishi-mitra-nu.vercel.app/)**  
+> Access the deployed, production build of the Krishi Mitra frontend directly online.
+
 This directory contains the complete React 18 + Vite frontend application for Krishi Mitra.
 
 ---

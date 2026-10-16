@@ -1,5 +1,11 @@
 # 📚 Krishi Mitra (कृषि मित्र) — Complete Technical Documentation Hub
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-krishi--mitra--nu.vercel.app-00C853?style=for-the-badge&logo=vercel&logoColor=white)](https://krishi-mitra-nu.vercel.app/)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shresth1603/Krishi_Mitra)
+
+> 🌐 **Live Web Application**: **[https://krishi-mitra-nu.vercel.app/](https://krishi-mitra-nu.vercel.app/)**  
+> *Evaluators, mentors, and reviewers can test and navigate the live platform directly in the browser.*
+
 Welcome to the official technical and functional documentation package for **Krishi Mitra-1**.
 
 This documentation suite provides a complete, evidence-based audit of the entire codebase, datasets, machine learning models, external API integrations, system architectures, and user journeys. It is designed to be fully accessible and presentation-ready for **college faculty, project evaluators, technical mentors, teammates, and startup investors**.

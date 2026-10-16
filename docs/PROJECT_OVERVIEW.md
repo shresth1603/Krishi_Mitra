@@ -2,7 +2,8 @@
 
 > **Document Status**: [VERIFIED IMPLEMENTED]  
 > **Audience**: College Faculty, Academic Evaluators, Technical Mentors, Teammates, Agritech Investors  
-> **Repository**: [https://github.com/shresth1603/Krishi-Mitra-1](https://github.com/shresth1603/Krishi-Mitra-1)  
+> **Live Web Application**: [https://krishi-mitra-nu.vercel.app/](https://krishi-mitra-nu.vercel.app/)  
+> **Repository**: [https://github.com/shresth1603/Krishi_Mitra](https://github.com/shresth1603/Krishi_Mitra)  
 > **Workspace Path**: `c:\Users\DELL\Krishi-Mitra-1`  
 > **Current Version**: 3.0.0 (Production Architecture)
 
