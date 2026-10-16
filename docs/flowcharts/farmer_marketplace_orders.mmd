@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph Current_Implementation["Current Implementation: Mandi Information & Price Intelligence ONLY [VERIFIED IMPLEMENTED]"]
+        M1["👨‍🌾 Farmer Checks Mandi Dashboard (MarketPricePage.jsx)"]
+        M2["📊 View Spot Prices Across Mandis (Min, Max, Modal Price)"]
+        M3["📈 Compare Price Spreads Across Districts & Markets"]
+        M4["🔮 View Econometric Time-Series Projections (Mandi Forecasting)"]
+        M5["💡 Farmer Makes Independent Offline Selling Decision"]
+        
+        M1 --> M2 --> M3 --> M4 --> M5
+    end
+
+    subgraph Proposed_Marketplace["Proposed Future Architecture: Farmer Transactional Marketplace [PLANNED - NOT IMPLEMENTED]"]
+        direction TB
+        
+        P_List["Phase 2: Farmer Listing & Catalog<br/>- Farmer lists commodity, quantity (Quintals), harvesting date, expected price<br/>- Uploads quality photos & location pin"]
+        
+        P_Enquiry["Phase 2: Buyer Discovery & Direct Enquiry<br/>- Wholesale traders, local retailers (F2B) & consumers (F2C) search listings<br/>- In-app negotiated price offers & quantity bids"]
+        
+        P_Order["Phase 3: Formal Order Creation & Escrow<br/>- Smart order contract generated with terms, delivery date, transport clause<br/>- Buyer deposits funds into secure Escrow (UPI / NetBanking / Razorpay)"]
+        
+        P_Quality["Phase 3: Quality Check & Logistics<br/>- Digital grade inspection (AGMARK standard)<br/>- Rural logistics dispatch & transport tracking"]
+        
+        P_Fulfill["Phase 3: Delivery Confirmation & Payout<br/>- Buyer verifies arrival and quality at destination<br/>- Escrow releases 100% payment directly to Farmer's bank account<br/>- Dispute resolution window if grade mismatch occurs"]
+        
+        P_Analytics["Phase 4: Verified Network & Credit Scoring<br/>- Trust scores, repeat transaction histories<br/>- Transaction-backed Kisan Credit scoring for low-interest bank loans"]
+        
+        P_List --> P_Enquiry --> P_Order --> P_Quality --> P_Fulfill --> P_Analytics
+    end
+
+    M5 -.->|Proposed Strategic Transition| P_List
+
+    classDef implemented fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef planned fill:#fef2f2,stroke:#dc2626,stroke-width:2px,stroke-dasharray: 5 5,color:#7f1d1d;
+
+    class Current_Implementation implemented;
+    class Proposed_Marketplace planned;

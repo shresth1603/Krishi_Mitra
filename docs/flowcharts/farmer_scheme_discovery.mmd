@@ -1,0 +1,31 @@
+flowchart TD
+    Farmer(["🏛️ Farmer Navigates to Schemes Page"]) --> ViewFilters["Farmer Views Discovery Controls:<br/>- Text Search Query (e.g. 'organic', 'insurance')<br/>- State Dropdown (All States, UP, Maharashtra, etc.)<br/>- Category Pills (Income, Insurance, Credit, Organic, etc.)"]
+
+    ViewFilters --> FilterAction["Filter Engine Executes (schemes.js)"]
+
+    subgraph Client_Filter_Engine["Local Catalogue Filtering (src/pages/SchemesPage.jsx)"]
+        LoadCatalogue["Load Curated Scheme Database (SCHEMES in schemes.js)"]
+        
+        LoadCatalogue --> StateMatch{"State Matches?<br/>(s.states == 'all' OR includes selectedState)"}
+        StateMatch -- No --> DropScheme["Exclude from View"]
+        StateMatch -- Yes --> CatMatch{"Category Matches?<br/>(categoryFilter == 'all' OR s.category == categoryFilter)"}
+        
+        CatMatch -- No --> DropScheme
+        CatMatch -- Yes --> SearchMatch{"Search Matches Title, Full Name, or Tags?"}
+        
+        SearchMatch -- No --> DropScheme
+        SearchMatch -- Yes --> RetainScheme["Keep in Filtered Results List"]
+    end
+
+    FilterAction --> LoadCatalogue
+    RetainScheme --> RenderCards["📱 Render Scheme Detail Cards:<br/>- Scheme Title & Full Name<br/>- Categorization Badge (Income, Credit, Insurance)<br/>- Clear Rupee Benefit Breakdown<br/>- Detailed Eligibility Conditions<br/>- Required Documents Checklist<br/>- Application Deadline Status"]
+
+    RenderCards --> UserClick["Farmer Clicks 'Apply on Official Portal'"]
+
+    subgraph External_Verification["Government Trust & Security Boundary"]
+        UserClick --> RedirectNotice["🔒 Sensitive Data Protection Notice:<br/>Krishi Mitra does NOT collect Aadhaar, Bank Details, or Land Records.<br/>Redirecting to verified government portal."]
+        
+        RedirectNotice --> OfficialPortals["🌐 Official Government Application Portals:<br/>- PM-KISAN: https://pmkisan.gov.in/<br/>- PMFBY: https://pmfby.gov.in/<br/>- Kisan Credit Card (RBI): https://rbi.org.in/<br/>- Paramparagat Krishi: https://agricoop.nic.in/<br/>- UP Agriculture: https://agriculture.up.gov.in/"]
+        
+        OfficialPortals --> GovtAuth["Farmer Authenticates on Official State/Central Portal<br/>(Aadhaar OTP / DigiLocker / CSC Center)"]
+    end

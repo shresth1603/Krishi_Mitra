@@ -1,0 +1,46 @@
+flowchart TD
+    Start(["📸 Farmer Uploads Leaf Photo"]) --> ClientVal{"Client-Side File Validation<br/>(Is file MIME image/*?)"}
+    
+    ClientVal -- No --> ClientErr["❌ Display Error:<br/>'Please select a valid image file'"]
+    ClientVal -- Yes --> Stage1["🔄 UI State: 'Uploading image...'"]
+    
+    Stage1 --> PostReq["🚀 HTTP POST /analyze<br/>(File multipart, Region, Season, Lang)"]
+    
+    subgraph Backend_Processing["FastAPI Backend Processing (/analyze)"]
+        SizeCheck{"File Size <= 10MB?"}
+        SizeCheck -- No --> Err413["❌ HTTP 413: Image too large"]
+        SizeCheck -- Yes --> PIL_Verify{"Pillow Header & Byte Integrity<br/>(Image.open & img.verify)"}
+        
+        PIL_Verify -- Corrupt/Invalid --> Err400["❌ HTTP 400: Corrupted or invalid image"]
+        PIL_Verify -- Valid --> Preprocessing["⚙️ Preprocessing Pipeline:<br/>1. Convert to RGB<br/>2. Resize to 224x224<br/>3. Cast float32 / 255.0<br/>4. Expand dims to (1, 224, 224, 3)"]
+        
+        Preprocessing --> CheckMock{"Is USE_MOCK_MODEL == true?"}
+        
+        CheckMock -- True (Dev/Demo) --> MockPred["⚠️ Mock Mode Simulation:<br/>- Random class from 38 labels<br/>- Random confidence (72% - 98%)<br/>- Set is_mock = true"]
+        CheckMock -- False (Production) --> CheckModelFile{"Does MODEL_PATH exist?<br/>(model/krishi_model.h5)"}
+        
+        CheckModelFile -- Missing --> Err503["❌ HTTP 503: Model file missing on disk"]
+        CheckModelFile -- Found --> TF_Inference["🧠 MobileNetV2 Tensor Inference:<br/>preds = model.predict(arr)<br/>raw_class = argmax(preds)<br/>confidence = max(preds)<br/>Set is_mock = false"]
+        
+        MockPred --> ParseLabel
+        TF_Inference --> ParseLabel["🏷️ Parse Raw Label String:<br/>Split by '___' -> Crop Name, Disease, is_healthy"]
+        
+        ParseLabel --> AgroSeverity["🩺 Agronomic Severity Evaluation:<br/>- If healthy -> 'Low'<br/>- If systemic (Blight, Mosaic, Greening) -> 'Severe'<br/>- Else -> 'Moderate'"]
+        
+        AgroSeverity --> GeminiCall{"GEMINI_API_KEY Configured<br/>& Daily Quota Available?"}
+        
+        GeminiCall -- Yes --> PromptEng["📝 Format Structured Gemini Prompt:<br/>DISEASE_SUMMARY, SEVERITY, SYMPTOMS,<br/>48H ACTION, CHEMICAL, ORGANIC,<br/>PREVENTION, LOSS EST, ESCALATION"]
+        PromptEng --> ModelChain["🤖 Model Fallback Chain:<br/>1. gemini-2.5-flash<br/>2. gemini-2.5-flash-lite<br/>3. gemini-flash-latest"]
+        ModelChain -- Success --> NormAdv["🧹 Normalize Sections & Enforce English Labels"]
+        ModelChain -- Failed/Quota 429 --> StaticAdv["🛡️ Static Agronomic Fallback:<br/>(Curated Mancozeb/Copper/Neem Recipes)"]
+        GeminiCall -- No/Disabled --> StaticAdv
+        
+        NormAdv --> PackageResp["📦 Assemble Final JSON Response"]
+        StaticAdv --> PackageResp
+        
+        PackageResp --> AddAddons["➕ Contextual Weather & Mandi Advisories:<br/>- Humidity/Rain Spray Timing Warning<br/>- Market Premium for Healthy Produce"]
+    end
+    
+    PostReq --> SizeCheck
+    AddAddons --> ReturnJson["📤 Return HTTP 200 JSON Payload"]
+    ReturnJson --> RenderUI["📱 Frontend Displays DiseaseResultCard:<br/>1. Red Alert Banner (if severe)<br/>2. Severity & Confidence Gauge<br/>3. Immediate 48-Hour Recovery Plan<br/>4. Chemical vs Organic Generic Options<br/>5. WhatsApp Text Formatter & Audio Readout"]

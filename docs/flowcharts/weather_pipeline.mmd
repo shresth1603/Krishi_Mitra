@@ -1,0 +1,75 @@
+flowchart TD
+    Farmer(["🌤️ Farmer Opens Weather Page or Weather Widget"]) --> StateSelect["Farmer Selects State & District<br/>(e.g., Kerala -> Thiruvananthapuram, UP -> Lucknow)"]
+    
+    StateSelect --> CoordsLookup{"Is District in DISTRICT_COORDS map?"}
+    
+    CoordsLookup -- Yes --> LatLonURL["Build URL with exact coordinates:<br/>/api/weather?lat=...&lon=..."]
+    CoordsLookup -- No --> CityURL["Build URL with district/city name string:<br/>/api/weather?city=..."]
+    
+    LatLonURL --> ClientCache{"Is Result in Client Cache?<br/>(5-min TTL in _wCache)"}
+    CityURL --> ClientCache
+    
+    ClientCache -- Hit --> ReturnClientCache["⚡ Return Cached Weather Immediately"]
+    ClientCache -- Miss --> ReqBackend["🚀 HTTP GET /api/weather"]
+    
+    subgraph Backend_Weather["FastAPI Backend Weather Proxy (/api/weather)"]
+        CheckKey{"Is WEATHER_API_KEY Configured<br/>in Backend .env?"}
+        
+        CheckKey -- Not Set (Empty) --> Err503["❌ HTTP 503 Service Unavailable:<br/>'Weather service not configured. Set WEATHER_API_KEY in backend .env'"]
+        
+        CheckKey -- Set --> ServerCache{"Is Query in Backend Server Cache?<br/>(_cache with 300s TTL)"}
+        ServerCache -- Hit --> ReturnServerCache["⚡ Return Server Cached Weather"]
+        
+        ServerCache -- Miss --> CallOWM["🌐 Concurrent External Async Requests to OpenWeatherMap:<br/>1. GET /data/2.5/weather (Current Conditions)<br/>2. GET /data/2.5/forecast (5-Day 3-Hour Forecast)<br/>(Timeout: 8.0 seconds)"]
+        
+        CallOWM --> TimeoutCheck{"Did OWM Respond within 8s?"}
+        TimeoutCheck -- Timeout --> Err504["❌ HTTP 504 Gateway Timeout:<br/>'Weather API timed out'"]
+        
+        TimeoutCheck -- Responded --> StatusCheck{"OWM Response Status == 200?"}
+        StatusCheck -- HTTP 401 (Invalid Key) --> Err401["❌ HTTP 401: Invalid API Key message from provider"]
+        StatusCheck -- HTTP 404 (Unknown City) --> Err404["❌ HTTP 404: City not found"]
+        StatusCheck -- HTTP 429 (Provider Limit) --> Err429["❌ HTTP 429: Account call quota exceeded"]
+        
+        StatusCheck -- 200 OK --> ParseNormalize["🧹 Response Normalization Pipeline:<br/>- Temperature & feels_like (Celsius metric)<br/>- Humidity %, Wind speed (km/h converted from m/s)<br/>- Extract next 6 slots (18h hourly forecast)<br/>- Group remaining 5 calendar days (daily highs/lows)<br/>- Attach lastUpdated ISO timestamp"]
+        
+        ParseNormalize --> SaveServerCache["💾 Set Server Cache (300s TTL)"]
+    end
+    
+    ReqBackend --> CheckKey
+    SaveServerCache --> ReturnNormalized["📤 Return HTTP 200 Normalized JSON"]
+    
+    ReturnClientCache --> RuleEngine
+    ReturnServerCache --> RuleEngine
+    ReturnNormalized --> RuleEngine
+    
+    subgraph Frontend_Advisory["Client-Side Agricultural Advisory Engine (getFarmingAdvisory)"]
+        RuleEngine["🌾 Deterministic Agronomic Rules Evaluated on Weather:"]
+        
+        R1{"Wind > 20 km/h OR Rain > 40%?"}
+        R1 -- Yes --> Adv_NoSpray["🚫 Warning: 'Do Not Spray Today - drift risk'"]
+        R1 -- No --> R2{"Wind < 12 km/h & Rain < 20%?"}
+        R2 -- Yes --> Adv_SafeSpray["✅ Success: 'Safe Spray Window (6-9 AM)'"]
+        
+        R3{"Humidity > 80% & Temp 22-32°C?"}
+        R3 -- Yes --> Adv_Fungal["🍄 Danger: 'High Fungal Disease Risk (Blight/Mildew) - Apply Fungicide'"]
+        
+        R4{"Temp > 38°C?"}
+        R4 -- Yes --> Adv_Heat["🌡️ Danger: 'Extreme Heat Alert - Provide shade nets & avoid 11am-3pm'"]
+        
+        R5{"Temp < 10°C?"}
+        R5 -- Yes --> Adv_Cold["🥶 Danger: 'Cold Stress Warning - Frost risk, cover young plants'"]
+        
+        R6{"Thunderstorm OR Rain > 70%?"}
+        R6 -- Yes --> Adv_Rain["⛈️ Danger: 'Heavy Rain Alert - Clear drainage channels to avoid root rot'"]
+    end
+    
+    Adv_NoSpray --> RenderDashboard["📱 Weather Dashboard Renders:<br/>1. Current Temp, Humidity, Wind, Pressure Cards<br/>2. Weather-Driven Actionable Spray & Irrigation Directives<br/>3. Next 18-Hour Hourly Timeline<br/>4. 5-Day Extended Daily Forecast"]
+    Adv_SafeSpray --> RenderDashboard
+    Adv_Fungal --> RenderDashboard
+    Adv_Heat --> RenderDashboard
+    Adv_Cold --> RenderDashboard
+    Adv_Rain --> RenderDashboard
+    
+    Err503 --> RenderError["⚠️ Honest Error UI:<br/>'Weather service not configured. Check backend .env' + Retry Button"]
+    Err504 --> RenderError
+    Err401 --> RenderError

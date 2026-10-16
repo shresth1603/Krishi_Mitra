@@ -1,0 +1,30 @@
+flowchart TD
+    Start(["🌱 Farmer Enters Soil & Climate Parameters"]) --> InputForm["UI Form Inputs or Region Preset Selection:<br/>- N (0-200 kg/ha)<br/>- P (0-200 kg/ha)<br/>- K (0-250 kg/ha)<br/>- Temperature (0-55 °C)<br/>- Humidity (0-100 %)<br/>- Soil pH (0-14)<br/>- Rainfall (0-4000 mm)"]
+    
+    InputForm --> ClientVal{"Frontend Range & Type Check"}
+    ClientVal -- Out of Range --> UI_Err["❌ Show Validation Error Prompt"]
+    ClientVal -- Valid --> SendPost["🚀 HTTP POST /api/crop-recommendation<br/>(JSON payload)"]
+    
+    subgraph Backend_Crop["FastAPI Crop Recommendation Service"]
+        PydanticCheck{"Pydantic Payload Validation<br/>(CropRecommendationRequest)"}
+        PydanticCheck -- Type Error --> Err422["❌ HTTP 422: Unprocessable Entity"]
+        
+        PydanticCheck -- Valid Types --> RangeCheck{"validate_crop_inputs()<br/>Range Verification against Agronomic Bounds"}
+        RangeCheck -- Boundary Breach --> ErrRange422["❌ HTTP 422: Input out of allowable range"]
+        
+        RangeCheck -- Pass --> CheckArtifacts{"Are Model Artifacts Loaded?<br/>(crop_rf_model, crop_scaler, crop_label_encoder)"}
+        
+        CheckArtifacts -- No / Missing File --> Err503["❌ HTTP 503: Model artifacts not found.<br/>Run train.py"]
+        
+        CheckArtifacts -- Yes --> ScaleTransform["📐 StandardScaler Feature Normalization:<br/>X_scaled = scaler.transform([[N, P, K, temp, hum, ph, rain]])"]
+        
+        ScaleTransform --> RF_Inference["🌲 Random Forest Inference (200 Trees):<br/>probas = model.predict_proba(X_scaled)[0]<br/>top_indices = argsort(probas)[::-1][:5]"]
+        
+        RF_Inference --> ClassDecode["🏷️ Label Decoding & Probability Mapping:<br/>recommended_crop = encoder.classes_[top_indices[0]]<br/>confidence = probas[top_indices[0]] * 100<br/>alternatives = top 2 to 5 ranked candidates"]
+        
+        ClassDecode --> AttachDisclaimers["📋 Attach Model Provenance & Advisory Notice:<br/>- Prototype dataset (Kaggle CC BY 3.0 IGO)<br/>- Advise confirmation with local KVK agronomist"]
+    end
+    
+    SendPost --> PydanticCheck
+    AttachDisclaimers --> ReturnJson["📤 Return HTTP 200 JSON Payload"]
+    ReturnJson --> RenderResult["📱 Frontend Renders CropRecommendationPage:<br/>1. Primary Recommended Crop Card with Confidence %<br/>2. Top Alternative Crops with Suitability Meters<br/>3. Normalized Feature Comparison Gauges<br/>4. Grounded Localized Agronomic Notice"]

@@ -1,0 +1,54 @@
+flowchart TD
+    UserSelect(["🌾 Farmer Selects State, Commodity & Market"]) --> TabChoice{"User Selects Tab"}
+
+    %% Track A: Spot Prices
+    subgraph Spot_Price_Track["Track A: Live APMC Spot Market Prices (GET /api/mandi)"]
+        TabChoice -- "📊 Spot Market Prices" --> CacheCheck{"Is Query in 5-min TTL Cache?<br/>(mandi_state_commodity)"}
+        CacheCheck -- Hit --> ReturnCache["⚡ Return Cached Spot Prices"]
+        CacheCheck -- Miss --> CheckKey{"Is AGMARKNET_KEY Configured<br/>in Backend .env?"}
+        
+        CheckKey -- Yes --> CallAgmarknet["🌐 Fetch from data.gov.in AGMARKNET Resource<br/>(resource/9ef84268-d588-465a-a308-a864a43d0070)"]
+        CallAgmarknet --> ParseLive{"API Responds 200 & Has Records?"}
+        
+        ParseLive -- Yes --> CleanLive["🧹 Clean Fields, Calculate Price Trend & Format Mandi List"]
+        CleanLive --> SetLiveCache["💾 Store in Backend Cache (300s TTL)"]
+        SetLiveCache --> ReturnLive["📤 Return HTTP 200 (Live Agmarknet Data)"]
+        
+        ParseLive -- No / Error --> FallbackMock["⚠️ Fallback to Indicative State Mock Baseline<br/>(state_prices dictionary)"]
+        CheckKey -- No --> FallbackMock
+        
+        FallbackMock --> LabelMock["🏷️ Explicitly Tag Source:<br/>'Estimated (Agmarknet key not configured)'"]
+        LabelMock --> ReturnMock["📤 Return HTTP 200 (Fallback Data)"]
+    end
+
+    %% Track B: Forecasting
+    subgraph Forecast_Track["Track B: Econometric Price Forecasting (POST /api/mandi/forecast)"]
+        TabChoice -- "🔮 Price Forecasting (ML Model 3)" --> CheckHorizon{"Horizon Days Valid?<br/>(1 <= days <= 30)"}
+        CheckHorizon -- No --> ErrHorizon["❌ HTTP 422: Horizon must be 1 to 30 days"]
+        CheckHorizon -- Yes --> CheckDisk{"Look for Historical Archive in<br/>datasets/mandi_historical/*.csv"}
+        
+        CheckDisk -- No Dataset on Disk --> ReturnUnavail["📋 Return Status: DATA_UNAVAILABLE<br/>- Transparently report missing dataset<br/>- Explain 30-day historical requirement<br/>- Strictly prohibit fabricating projections"]
+        
+        CheckDisk -- Dataset Found --> IngestCSV["⚙️ Run ingestion.py Pipeline:<br/>1. Normalize column aliases<br/>2. Multi-format date parsing<br/>3. Filter non-positive prices<br/>4. Reject synthetic/mock records<br/>5. Deduplicate (date+market+commodity)<br/>6. Chronological sorting"]
+        
+        IngestCSV --> CheckObs{"Check Available Observations for<br/>Selected Commodity & Market"}
+        CheckObs -- "< 30 Daily Records" --> ReturnLowObs["📋 Return Status: INSUFFICIENT_OBSERVATIONS<br/>- Report available vs needed count<br/>- Avoid overfit statistical models"]
+        
+        CheckObs -- ">= 30 Daily Records" --> TimeSplit["⏳ Strict Chronological Split:<br/>- Train: Earliest 80% of dates<br/>- Test: Latest 20% of dates (Held-out)<br/>- ZERO temporal leakage"]
+        
+        TimeSplit --> TrainModels["🧠 Train Parallel Forecasters:<br/>1. SeasonalNaiveBaseline (7-day lag)<br/>2. LagRidgeForecaster (lags 1,2,3,7 + roll_7 + dow)"]
+        
+        TrainModels --> EvalTest["📐 Evaluate on Held-Out Test Window:<br/>Compute MAE, RMSE, MAPE"]
+        EvalTest --> SelectBest["🏆 Select Model with Lowest MAE"]
+        SelectBest --> RetrainFull["🔄 Refit Winning Model on Full Historical Series"]
+        RetrainFull --> MultiStepRec["🔮 Recursive Multi-Step Forecast (1 to N Days Ahead)"]
+        MultiStepRec --> ReturnForecast["📤 Return HTTP 200 (Forecasted Prices, Metrics & Disclaimers)"]
+    end
+
+    ReturnCache --> RenderSpotUI["📱 Frontend Renders Spot Price Cards & Mandi Spreads"]
+    ReturnLive --> RenderSpotUI
+    ReturnMock --> RenderSpotUI
+    
+    ReturnUnavail --> RenderStatusUI["📱 Frontend Displays Ingestion Blocker & Provenance Notice"]
+    ReturnLowObs --> RenderStatusUI
+    ReturnForecast --> RenderForecastUI["📱 Frontend Renders Forecast Table, Daily Deltas & Model MAE"]

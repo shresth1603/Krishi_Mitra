@@ -1,0 +1,90 @@
+graph TD
+    User["👨‍🌾 Farmer / User Interface<br/>(React 18 + Vite / Mobile Web)"]
+
+    subgraph Frontend["Frontend Layer (SPA)"]
+        UI_Home["Landing & Navigation<br/>(HomePage / Header / MobileNav)"]
+        UI_Scan["Leaf Disease Scanner<br/>(ChatPage / useDiseaseScan)"]
+        UI_Chat["Multilingual AI Assistant<br/>(ChatPage / Speech-to-Text)"]
+        UI_Crop["Soil & Climate Crop Advisory<br/>(CropRecommendationPage)"]
+        UI_Mandi["Spot Prices & Forecasts<br/>(MarketPricePage)"]
+        UI_Weather["Agro-Weather Alerts<br/>(WeatherPage)"]
+        UI_Schemes["Government Scheme Finder<br/>(SchemesPage)"]
+    end
+
+    subgraph Gateway["Backend Service Layer (FastAPI :8000)"]
+        API_GW["FastAPI Router & Security Controls"]
+        CORS["CORS & Request Sanity Filter"]
+        RateLimiter["In-Memory Rate Limiter<br/>(12 RPM / 18 RPD)"]
+        Cache["In-Memory TTL Cache<br/>(300s Expire)"]
+        Validator["Pydantic & Pillow Schema Validators"]
+    end
+
+    subgraph ML_Engines["Machine Learning & AI Engine Layer"]
+        subgraph Disease_Pipeline["Model 1: Plant Disease Detection"]
+            IMG_NORM["Image Normalization<br/>(224x224x3 RGB / 255.0)"]
+            M_MOBILENET["MobileNetV2 CNN<br/>(krishi_model.h5 - 38 Classes)"]
+            M_MOCK_DIS["Mock Randomizer<br/>(if USE_MOCK_MODEL=true)"]
+        end
+
+        subgraph Crop_Pipeline["Model 2: Crop Recommendation"]
+            SCALER["StandardScaler<br/>(7 Nutrients/Weather Features)"]
+            M_RF["Random Forest Classifier<br/>(200 Trees, 22 Crop Classes)"]
+        end
+
+        subgraph Mandi_Pipeline["Model 3: Mandi Forecasting"]
+            MANDI_INGEST["Data Ingestion & Schema Normalizer"]
+            CHRONO_SPLIT["Strict Chronological Split (80/20)"]
+            M_RIDGE["LagRidge Regression & Seasonal Naive"]
+            FORECAST_STATUS["Data Provenance & Blocker Guard"]
+        end
+
+        subgraph LLM_Agent["GenAI Agricultural Advisory Agent"]
+            GEMINI_CLIENT["Google GenAI SDK (google-genai)"]
+            MODEL_CHAIN["Model Fallback Chain<br/>(gemini-2.5-flash -> flash-lite -> latest)"]
+            STATIC_FALLBACK["Structured Static Rule Base<br/>(Alternaria, Phytophthora, etc.)"]
+        end
+    end
+
+    subgraph Data_Storage["Data Storage & External Services"]
+        OWM["OpenWeatherMap API<br/>(Current & 5-Day Forecast)"]
+        AGMARKNET["Agmarknet / data.gov.in API<br/>(Daily Mandi Arrivals)"]
+        STATIC_SCHEMES["Static Verified Schemes DB<br/>(schemes.js - PM-KISAN, PMFBY)"]
+        LOCAL_STORAGE["Client Browser LocalStorage<br/>(km_state, km_weather, krishiUser)"]
+    end
+
+    %% Connections
+    User --> UI_Home
+    UI_Home --> UI_Scan
+    UI_Home --> UI_Chat
+    UI_Home --> UI_Crop
+    UI_Home --> UI_Mandi
+    UI_Home --> UI_Weather
+    UI_Home --> UI_Schemes
+
+    UI_Scan -->|POST /analyze| API_GW
+    UI_Chat -->|POST /api/chat| API_GW
+    UI_Crop -->|POST /api/crop-recommendation| API_GW
+    UI_Mandi -->|GET /api/mandi & POST /api/mandi/forecast| API_GW
+    UI_Weather -->|GET /api/weather| API_GW
+    UI_Schemes --> STATIC_SCHEMES
+    UI_Home -.-> LOCAL_STORAGE
+
+    API_GW --> CORS --> RateLimiter --> Validator
+    RateLimiter --> Cache
+
+    Validator -->|Leaf Image Bytes| IMG_NORM
+    IMG_NORM --> M_MOBILENET
+    IMG_NORM -.-> M_MOCK_DIS
+    M_MOBILENET -->|Predicted Class & Confidence| GEMINI_CLIENT
+
+    Validator -->|N, P, K, Temp, Humidity, pH, Rain| SCALER --> M_RF
+    Validator -->|State, Commodity, Market, Horizon| MANDI_INGEST
+    MANDI_INGEST --> FORECAST_STATUS
+    FORECAST_STATUS -->|If >= 30 days data| CHRONO_SPLIT --> M_RIDGE
+
+    Validator -->|Farmer Question + Context| GEMINI_CLIENT
+    GEMINI_CLIENT --> MODEL_CHAIN
+    MODEL_CHAIN -.->|Quota/Rate Limit Error| STATIC_FALLBACK
+
+    API_GW -->|Proxy with Secret Key| OWM
+    API_GW -->|Proxy with Secret Key| AGMARKNET
